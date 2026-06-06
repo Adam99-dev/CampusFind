@@ -3,6 +3,25 @@ import jwt from "jsonwebtoken";
 import prisma from "../config/db.js";
 import { generateToken } from "../utils/generateToken.js";
 
+const isLocalOrigin = (origin = "") =>
+  origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1");
+
+const getAuthCookieOptions = (req) => {
+  const localRequest = isLocalOrigin(req.get("origin"));
+
+  return {
+    httpOnly: true,
+    secure: !localRequest,
+    sameSite: localRequest ? "lax" : "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
+const getClearAuthCookieOptions = (req) => {
+  const { maxAge, ...options } = getAuthCookieOptions(req);
+  return options;
+};
+
 // REGISTER
 export const register = async (req, res) => {
   try {
@@ -48,12 +67,7 @@ export const register = async (req, res) => {
 
     const token = await generateToken(user.id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getAuthCookieOptions(req));
 
     return res.status(201).json({
       success: true,
@@ -104,12 +118,7 @@ export const login = async (req, res) => {
 
     const token = await generateToken(user.id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getAuthCookieOptions(req));
 
     return res.status(200).json({
       success: true,
@@ -135,11 +144,7 @@ export const login = async (req, res) => {
 // LOGOUT
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    });
+    res.clearCookie("token", getClearAuthCookieOptions(req));
 
     return res.status(200).json({
       success: true,

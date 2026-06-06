@@ -18,12 +18,29 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// cors config 
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://campusfind-lemon.vercel.app",
+];
+
+const allowedOrigins = (process.env.CLIENT_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const corsAllowedOrigins = [...new Set([...defaultAllowedOrigins, ...allowedOrigins])];
+
+// cors config
 app.use(
   cors({
-    origin: [
-      "https://campusfind-lemon.vercel.app/",
-    ],
+    origin(origin, callback) {
+      if (!origin || corsAllowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     credentials: true,
   })
 );
