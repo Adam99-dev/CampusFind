@@ -22,8 +22,7 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [
-      "https://college-discovery-site.vercel.app",
-      "http://localhost:5173",
+      process.env.FRONTEND_URL,
     ],
     credentials: true,
   })
